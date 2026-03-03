@@ -21,3 +21,5 @@ jobs:
       - run: npm run lint
       - run: npx playwright install chromium --with-deps
       - run: npm test
+        env:
+          CHOKIDAR_USEPOLLING: "1"
