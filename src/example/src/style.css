@@ -1,0 +1,50 @@
+body {
+	font-family: system-ui, sans-serif;
+	max-width: 48rem;
+	margin: 2rem auto;
+	padding: 0 1rem;
+	color: #1a1a1a;
+}
+
+nav ul {
+	list-style: none;
+	padding: 0;
+}
+
+nav li {
+	padding: 0.5rem 0;
+}
+
+nav a {
+	color: #2563eb;
+	text-decoration: none;
+	font-weight: 500;
+}
+
+nav a:hover {
+	text-decoration: underline;
+}
+
+nav small {
+	color: #6b7280;
+}
+
+.draft {
+	font-size: 0.75rem;
+	background: #fbbf24;
+	color: #1a1a1a;
+	padding: 0.1rem 0.4rem;
+	border-radius: 0.25rem;
+	vertical-align: middle;
+}
+
+#detail {
+	margin-top: 2rem;
+	padding-top: 2rem;
+	border-top: 1px solid #e5e7eb;
+}
+
+#detail img {
+	max-width: 100%;
+	height: auto;
+}

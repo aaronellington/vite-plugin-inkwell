@@ -1,0 +1,12 @@
+# Build output
+/.config/tmp/
+
+# Dependencies
+/node_modules/
+
+# Generated files
+package-lock.json
+
+# Biome formatted
+*.ts
+*.tsx
