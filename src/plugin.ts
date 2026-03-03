@@ -117,9 +117,10 @@ export function inkwell(options?: ContentPluginOptions): Plugin {
 		},
 		enforce: "pre",
 
-		handleHotUpdate(ctx) {
-			const { file, server: hmrServer } = ctx
+		hotUpdate(ctx) {
+			const { file } = ctx
 			if (!file.endsWith(".md")) return
+			if (!server) return
 
 			// Find which watched directory this file belongs to
 			let matchedDir: string | undefined
@@ -137,15 +138,15 @@ export function inkwell(options?: ContentPluginOptions): Plugin {
 				collections.set(matchedDir, items)
 			} catch (error) {
 				const message = error instanceof Error ? error.message : String(error)
-				hmrServer.config.logger.error(message)
+				server.config.logger.error(message)
 				return []
 			}
 
 			// Invalidate the collection module
 			const collectionId = RESOLVED_PREFIX + matchedDir
-			const collectionModule = hmrServer.moduleGraph.getModuleById(collectionId)
-			if (collectionModule) {
-				hmrServer.moduleGraph.invalidateModule(collectionModule)
+			const mod = this.environment.moduleGraph.getModuleById(collectionId)
+			if (mod) {
+				this.environment.moduleGraph.invalidateModule(mod)
 			}
 
 			// Invalidate the changed file's slug module
@@ -157,13 +158,13 @@ export function inkwell(options?: ContentPluginOptions): Plugin {
 					matchedDir +
 					SLUG_SEPARATOR +
 					changedItem.frontmatter.slug
-				const slugModule = hmrServer.moduleGraph.getModuleById(slugId)
+				const slugModule = this.environment.moduleGraph.getModuleById(slugId)
 				if (slugModule) {
-					hmrServer.moduleGraph.invalidateModule(slugModule)
+					this.environment.moduleGraph.invalidateModule(slugModule)
 				}
 			}
 
-			hmrServer.hot.send({ type: "full-reload" })
+			server.hot.send({ type: "full-reload" })
 			return []
 		},
 
