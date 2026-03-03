@@ -1,0 +1,15 @@
+{
+	"extends": "../../tsconfig.json",
+	"compilerOptions": {
+		"composite": true,
+		"noEmit": false,
+		"emitDeclarationOnly": true,
+		"declarationDir": "../../.config/tmp/tests-declarations",
+		"tsBuildInfoFile": "../../.config/tmp/tests.tsbuildinfo",
+		"lib": ["ES2022"],
+		"types": ["node"]
+	},
+	"include": ["."],
+	"exclude": ["test-results"],
+	"references": []
+}

@@ -1,0 +1,20 @@
+{
+	"compilerOptions": {
+		"lib": ["ES2022"],
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"noEmit": true,
+		"tsBuildInfoFile": ".config/tmp/root.tsbuildinfo",
+		"noFallthroughCasesInSwitch": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"allowImportingTsExtensions": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"target": "ES2022",
+		"verbatimModuleSyntax": true
+	},
+	"include": ["src"],
+	"exclude": ["src/example", "src/tests"],
+	"references": [{ "path": "./src/example" }, { "path": "./src/tests" }]
+}

@@ -1,0 +1,15 @@
+{
+	"extends": "../../tsconfig.json",
+	"compilerOptions": {
+		"composite": true,
+		"noEmit": false,
+		"emitDeclarationOnly": true,
+		"declarationDir": "../../.config/tmp/example-declarations",
+		"tsBuildInfoFile": "../../.config/tmp/example.tsbuildinfo",
+		"lib": ["ES2022", "DOM"],
+		"noUnusedLocals": false,
+		"noUnusedParameters": false
+	},
+	"include": ["src"],
+	"references": []
+}
