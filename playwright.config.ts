@@ -3,7 +3,7 @@ import { defineConfig } from "@playwright/test"
 export default defineConfig({
 	testDir: "./src/tests",
 	fullyParallel: true,
-	globalSetup: "./src/tests/global-setup.ts",
+	globalSetup: "./src/tests/global-setup",
 	outputDir: "./.config/tmp/tests/test-results",
 	use: {
 		baseURL: `http://localhost:${process.env.PREVIEW_PORT}`,
