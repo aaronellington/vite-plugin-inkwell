@@ -12,19 +12,18 @@ import {
 	parseContentFile,
 	scanDirectory,
 } from "./content.js"
-import type { ContentPluginOptions, ParsedContentItem } from "./types.js"
+import type { ParsedContentItem } from "./types.js"
 
 const CONTENT_PREFIX = "inkwell:"
 const RESOLVED_PREFIX = "\0inkwell:"
 const SLUG_SEPARATOR = "/"
 
-export function inkwell(options?: ContentPluginOptions): Plugin {
-	const opts = options ?? {}
+export function inkwell(): Plugin {
 	let config: ResolvedConfig
 	let server: ViteDevServer | undefined
 	let isProduction = false
 
-	const renderer = createRenderer(opts.markedExtensions ?? [])
+	const renderer = createRenderer([])
 
 	// Map from absolute directory path to its parsed content items
 	const collections = new Map<string, ParsedContentItem[]>()
@@ -36,17 +35,11 @@ export function inkwell(options?: ContentPluginOptions): Plugin {
 			throw new Error(`Content directory does not exist: ${absoluteDir}`)
 		}
 
-		const recursive = opts.recursive !== false
-		const allFiles = scanDirectory(absoluteDir, recursive)
+		const allFiles = scanDirectory(absoluteDir, true)
 		const items: ParsedContentItem[] = []
 
 		for (const filePath of allFiles) {
-			const item = parseContentFile(
-				filePath,
-				absoluteDir,
-				renderer,
-				opts.validate,
-			)
+			const item = parseContentFile(filePath, absoluteDir, renderer)
 
 			const assets = extractAssetReferences(item.html, filePath)
 			item.assets = assets
@@ -60,7 +53,7 @@ export function inkwell(options?: ContentPluginOptions): Plugin {
 	}
 
 	function getVisibleItems(items: ParsedContentItem[]): ParsedContentItem[] {
-		if (isProduction && !opts.includeDrafts) {
+		if (isProduction) {
 			return items.filter((item) => !item.frontmatter.draft)
 		}
 		return items

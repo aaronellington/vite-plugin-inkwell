@@ -8,7 +8,7 @@ author: Example Author
 # Using Inkwell
 
 This post demonstrates a custom slug and extra frontmatter fields.
-The `author` field above ends up in the `meta` object on the `ContentItem`.
+The `author` field above ends up in the `meta` object on the `Content`.
 
 ## Features
 

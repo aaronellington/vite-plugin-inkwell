@@ -101,14 +101,9 @@ export function parseContentFile(
 	filePath: string,
 	baseDir: string,
 	renderer: Marked,
-	validate?: (frontmatter: Record<string, unknown>, filePath: string) => void,
 ): ParsedContentItem {
 	const fileContent = fs.readFileSync(filePath, "utf-8")
 	const { data, content } = parseFrontmatter(fileContent, filePath)
-
-	if (validate) {
-		validate(data, filePath)
-	}
 
 	const slug = computeSlug(data, filePath)
 	const directoryPath = path.relative(baseDir, path.dirname(filePath))

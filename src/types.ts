@@ -1,16 +1,3 @@
-import type { MarkedExtension } from "marked"
-
-export interface ContentPluginOptions {
-	/** Whether to recursively scan subdirectories (default: true) */
-	recursive?: boolean
-	/** Custom frontmatter validation function. Throw to fail build. */
-	validate?: (frontmatter: Record<string, unknown>, filePath: string) => void
-	/** Marked extensions for custom markdown rendering */
-	markedExtensions?: MarkedExtension[]
-	/** Whether to include draft posts in production (default: false) */
-	includeDrafts?: boolean
-}
-
 export interface ContentFrontmatter {
 	title: string
 	slug: string
@@ -39,7 +26,7 @@ export interface ParsedContentItem {
 	assets: AssetReference[]
 }
 
-export interface ContentItem {
+export interface Content {
 	title: string
 	slug: string
 	date: string
