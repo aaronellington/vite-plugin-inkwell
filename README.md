@@ -24,6 +24,12 @@ export default defineConfig({
 });
 ```
 
+For TypeScript support of `inkwell:*` imports, add a reference in a `.d.ts` file (e.g. `env.d.ts`):
+
+```typescript
+/// <reference types="@aaronellington/vite-plugin-inkwell/types" />
+```
+
 ## Usage
 
 Import a content directory using the `inkwell:` prefix. The path resolves relative to the importing file:
