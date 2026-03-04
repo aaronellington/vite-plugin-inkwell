@@ -20,10 +20,13 @@
 	],
 	"type": "module",
 	"exports": {
-		".": "./src/index.ts"
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		}
 	},
 	"files": [
-		"src/*.ts",
+		"dist",
 		"content.d.ts"
 	],
 	"engines": {
@@ -47,9 +50,11 @@
 		"vite": "^7.0.0"
 	},
 	"scripts": {
+		"build": "tsc",
 		"lint": "tsc -b && biome check . && prettier --check .",
 		"fix": "biome check --write . && prettier --write .",
 		"test": "playwright test",
-		"test:install": "playwright install chromium"
+		"test:install": "playwright install chromium",
+		"prepublishOnly": "npm run build"
 	}
 }

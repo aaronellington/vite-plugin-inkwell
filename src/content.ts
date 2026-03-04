@@ -4,7 +4,7 @@ import matter from "gray-matter"
 import type { MarkedExtension } from "marked"
 import { Marked } from "marked"
 import { parse as parseToml } from "smol-toml"
-import type { ContentFrontmatter, ParsedContentItem } from "./types.ts"
+import type { ContentFrontmatter, ParsedContentItem } from "./types.js"
 
 const matterOptions: matter.GrayMatterOption<string, any> = {
 	engines: {

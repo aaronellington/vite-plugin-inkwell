@@ -1,7 +1,7 @@
-export { inkwell } from "./plugin.ts"
+export { inkwell } from "./plugin.js"
 export type {
 	ContentFrontmatter,
 	ContentItem,
 	ContentPluginOptions,
 	ParsedContentItem,
-} from "./types.ts"
+} from "./types.js"

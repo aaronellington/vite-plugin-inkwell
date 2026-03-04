@@ -1,14 +1,16 @@
 {
 	"compilerOptions": {
+		"declaration": true,
+		"declarationMap": true,
 		"lib": ["ES2022"],
 		"module": "ESNext",
 		"moduleResolution": "bundler",
-		"noEmit": true,
+		"outDir": "dist",
+		"sourceMap": true,
 		"tsBuildInfoFile": ".config/tmp/root.tsbuildinfo",
 		"noFallthroughCasesInSwitch": true,
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
-		"allowImportingTsExtensions": true,
 		"skipLibCheck": true,
 		"strict": true,
 		"target": "ES2022",

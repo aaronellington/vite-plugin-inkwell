@@ -1,6 +1,6 @@
 import fs from "node:fs"
 import path from "node:path"
-import type { AssetReference } from "./types.ts"
+import type { AssetReference } from "./types.js"
 
 const ASSET_REGEX =
 	/(?:src|href|poster)=["'](?!(?:https?:|data:|#|\/\/|\/))([^"']+)["']/g

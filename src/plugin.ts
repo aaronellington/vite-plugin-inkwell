@@ -5,14 +5,14 @@ import {
 	extractAssetReferences,
 	generateSlugModuleCode,
 	replaceAssetsWithPlaceholders,
-} from "./assets.ts"
+} from "./assets.js"
 import {
 	checkDuplicateSlugs,
 	createRenderer,
 	parseContentFile,
 	scanDirectory,
-} from "./content.ts"
-import type { ContentPluginOptions, ParsedContentItem } from "./types.ts"
+} from "./content.js"
+import type { ContentPluginOptions, ParsedContentItem } from "./types.js"
 
 const CONTENT_PREFIX = "inkwell:"
 const RESOLVED_PREFIX = "\0inkwell:"
