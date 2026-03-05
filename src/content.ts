@@ -77,10 +77,16 @@ export function checkDuplicateSlugs(items: ParsedContentItem[]): void {
 
 const FILE_EXT_REGEX = /\.\w{1,10}$/
 
+const ABSOLUTE_OR_PROTOCOL_REGEX = /^(?:\/|[a-zA-Z][a-zA-Z0-9+\-.]*:)/
+
 const assetLinkExtension: MarkedExtension = {
 	renderer: {
 		link({ href, text }) {
-			if (href && FILE_EXT_REGEX.test(href)) {
+			if (
+				href &&
+				FILE_EXT_REGEX.test(href) &&
+				!ABSOLUTE_OR_PROTOCOL_REGEX.test(href)
+			) {
 				return `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`
 			}
 			return false
