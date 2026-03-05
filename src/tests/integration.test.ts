@@ -65,6 +65,29 @@ test.describe("production build", () => {
 		await expect(assetLink).toHaveCount(1)
 		await expect(assetLink).toHaveAttribute("rel", "noopener noreferrer")
 	})
+
+	test("absolute and protocol URLs are not treated as assets", async ({
+		page,
+	}) => {
+		await page.locator("nav ul li").nth(0).locator("a").click()
+
+		const detail = page.locator("#detail")
+
+		// /favicon.ico image should keep its original src unchanged
+		const favicon = detail.locator('img[alt="Favicon"]')
+		await expect(favicon).toHaveCount(1)
+		await expect(favicon).toHaveAttribute("src", "/favicon.ico")
+
+		// https:// link should not get target=_blank from the asset extension
+		const externalLink = detail.locator('a[href="https://example.com/page.html"]')
+		await expect(externalLink).toHaveCount(1)
+		await expect(externalLink).not.toHaveAttribute("target", "_blank")
+
+		// mailto: link should not get target=_blank from the asset extension
+		const mailtoLink = detail.locator('a[href="mailto:hello@example.com"]')
+		await expect(mailtoLink).toHaveCount(1)
+		await expect(mailtoLink).not.toHaveAttribute("target", "_blank")
+	})
 })
 
 test.describe("dev mode", () => {
