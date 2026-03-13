@@ -1,3 +1,6 @@
 /dist/
 /node_modules/
 /.config/tmp/
+src/**/*.d.ts
+src/**/*.d.ts.map
+src/example/dist/
