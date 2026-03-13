@@ -1,6 +1,7 @@
 ---
 title: Hello World
 date: "2025-01-15"
+description: The first post demonstrating Inkwell content collections.
 tags:
   - intro
   - getting-started

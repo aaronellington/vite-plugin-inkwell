@@ -17,11 +17,16 @@ test.describe("production build", () => {
 
 		await expect(items.nth(0).locator("a")).toContainText("Hello World")
 		await expect(items.nth(0)).toHaveAttribute("data-slug", "hello-world") // From filename
+		await expect(items.nth(0)).toHaveAttribute("data-path", "/blog/hello-world")
 
 		await expect(items.nth(1)).toHaveAttribute(
 			"data-slug",
 			"using-inkwell-slug",
 		) // From slug frontmatter
+		await expect(items.nth(1)).toHaveAttribute(
+			"data-path",
+			"/blog/using-inkwell-slug",
+		)
 		await expect(items.nth(1).locator("a")).toContainText("Using Inkwell")
 	})
 
@@ -64,6 +69,71 @@ test.describe("production build", () => {
 		const assetLink = page.locator('#detail a[target="_blank"]')
 		await expect(assetLink).toHaveCount(1)
 		await expect(assetLink).toHaveAttribute("rel", "noopener noreferrer")
+	})
+})
+
+test.describe("rss feed", () => {
+	let rss: string
+
+	test.beforeAll(async () => {
+		const baseURL = `http://localhost:${process.env.PREVIEW_PORT}`
+		const response = await fetch(`${baseURL}/rss.xml`)
+		expect(response.ok).toBe(true)
+		rss = await response.text()
+	})
+
+	test("rss.xml is valid RSS 2.0 with correct channel info", () => {
+		expect(rss).toContain('<?xml version="1.0" encoding="UTF-8"?>')
+		expect(rss).toContain(
+			'<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">',
+		)
+		expect(rss).toContain("<title>Inkwell Example</title>")
+		expect(rss).toContain("<link>https://example.com</link>")
+		expect(rss).toContain(
+			"<description>An example RSS feed from Inkwell</description>",
+		)
+		expect(rss).toContain("<language>en</language>")
+		expect(rss).toContain("<lastBuildDate>")
+		expect(rss).toContain(
+			'<atom:link href="https://example.com/rss.xml" rel="self" type="application/rss+xml"/>',
+		)
+	})
+
+	test("rss.xml contains non-draft posts sorted by date descending", () => {
+		// Should contain the two non-draft posts
+		expect(rss).toContain("<title>Using Inkwell</title>")
+		expect(rss).toContain("<title>Hello World</title>")
+
+		// Should NOT contain the draft post
+		expect(rss).not.toContain("<title>Work in Progress</title>")
+
+		// Using Inkwell (2025-02-20) should appear before Hello World (2025-01-15)
+		const usingInkwellPos = rss.indexOf("<title>Using Inkwell</title>")
+		const helloWorldPos = rss.indexOf("<title>Hello World</title>")
+		expect(usingInkwellPos).toBeLessThan(helloWorldPos)
+	})
+
+	test("rss.xml items have correct links and pubDates", () => {
+		expect(rss).toContain(
+			"<link>https://example.com/blog/using-inkwell-slug</link>",
+		)
+		expect(rss).toContain("<link>https://example.com/blog/hello-world</link>")
+
+		expect(rss).toContain(
+			`<pubDate>${new Date("2025-02-20").toUTCString()}</pubDate>`,
+		)
+		expect(rss).toContain(
+			`<pubDate>${new Date("2025-01-15").toUTCString()}</pubDate>`,
+		)
+	})
+
+	test("rss.xml item descriptions come from frontmatter", () => {
+		expect(rss).toContain(
+			"<description>The first post demonstrating Inkwell content collections.</description>",
+		)
+		expect(rss).toContain(
+			"<description>A guide to custom slugs and extra frontmatter fields in Inkwell.</description>",
+		)
 	})
 })
 

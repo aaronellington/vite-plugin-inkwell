@@ -2,6 +2,7 @@
 title: Using Inkwell
 slug: using-inkwell-slug
 date: "2025-02-20"
+description: A guide to custom slugs and extra frontmatter fields in Inkwell.
 author: Example Author
 ---
 
