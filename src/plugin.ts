@@ -444,7 +444,7 @@ export function inkwell(options: InkwellOptions): Plugin {
 
 		name: "inkwell",
 
-		resolveId(source) {
+		resolveId(source, importer) {
 			if (!source.startsWith(CONTENT_PREFIX)) return null
 
 			const rawPath = source.slice(CONTENT_PREFIX.length)
@@ -454,42 +454,59 @@ export function inkwell(options: InkwellOptions): Plugin {
 				return RESOLVED_PREFIX + rawPath
 			}
 
-			// Check if this is a single-item import: "collectionName/path/to/file.md"
-			const slashIndex = rawPath.indexOf("/")
-			if (slashIndex !== -1 && rawPath.endsWith(".md")) {
-				const collectionName = rawPath.slice(0, slashIndex)
-				const mdPath = rawPath.slice(slashIndex + 1)
-				const absoluteDir = collectionDirs.get(collectionName)
+			// Single-item import: path ends with .md, resolved relative to the importer
+			if (rawPath.endsWith(".md")) {
+				const importerDir = importer
+					? path.dirname(importer.replace(/^\0/, ""))
+					: config.root
+				const absoluteFilePath = path.resolve(importerDir, rawPath)
 
-				if (absoluteDir && mdPath.length > 0) {
-					// Build the collection if we haven't yet
-					if (!collections.has(absoluteDir)) {
-						const items = buildCollection(absoluteDir)
-						collections.set(absoluteDir, items)
-
-						if (server) {
-							server.watcher.add(absoluteDir)
-						}
-						watchedDirs.add(absoluteDir)
+				// Find which collection contains this file
+				let matchedDir: string | undefined
+				let matchedName: string | undefined
+				for (const [name, dir] of collectionDirs) {
+					if (
+						absoluteFilePath.startsWith(dir + path.sep) ||
+						absoluteFilePath.startsWith(`${dir}/`)
+					) {
+						matchedDir = dir
+						matchedName = name
+						break
 					}
+				}
 
-					// Resolve the .md path to a slug
-					const filePath = path.resolve(absoluteDir, mdPath)
-					const items = collections.get(absoluteDir)
-					const item = items?.find((i) => i.filePath === filePath)
-					if (!item) {
-						throw new Error(
-							`Content file "${mdPath}" not found in collection "${collectionName}"`,
-						)
-					}
-
-					return (
-						RESOLVED_CONTENT_PREFIX +
-						absoluteDir +
-						SLUG_SEPARATOR +
-						item.frontmatter.slug
+				if (!matchedDir || !matchedName) {
+					throw new Error(
+						`File "${rawPath}" (resolved to ${absoluteFilePath}) is not inside any configured collection directory. ` +
+							`Available collections: ${[...collectionDirs.entries()].map(([n, d]) => `${n} (${d})`).join(", ")}`,
 					)
 				}
+
+				// Build the collection if we haven't yet
+				if (!collections.has(matchedDir)) {
+					const items = buildCollection(matchedDir)
+					collections.set(matchedDir, items)
+
+					if (server) {
+						server.watcher.add(matchedDir)
+					}
+					watchedDirs.add(matchedDir)
+				}
+
+				const items = collections.get(matchedDir)
+				const item = items?.find((i) => i.filePath === absoluteFilePath)
+				if (!item) {
+					throw new Error(
+						`Content file "${rawPath}" (resolved to ${absoluteFilePath}) not found in collection "${matchedName}"`,
+					)
+				}
+
+				return (
+					RESOLVED_CONTENT_PREFIX +
+					matchedDir +
+					SLUG_SEPARATOR +
+					item.frontmatter.slug
+				)
 			}
 
 			// Look up by collection name

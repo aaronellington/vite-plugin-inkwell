@@ -1,5 +1,5 @@
 import posts from "inkwell:blog"
-import featuredPost from "inkwell:blog/hello-world.md"
+import featuredPost from "inkwell:../content/hello-world.md"
 import "./style.css"
 
 const app = document.getElementById("app") as HTMLElement
