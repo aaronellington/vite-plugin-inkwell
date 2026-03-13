@@ -1,4 +1,5 @@
 import posts from "inkwell:blog"
+import featuredPost from "inkwell:blog/hello-world.md"
 import "./style.css"
 
 const app = document.getElementById("app") as HTMLElement
@@ -10,6 +11,14 @@ detail.id = "detail"
 const h1 = document.createElement("h1")
 h1.textContent = "Inkwell Example"
 nav.appendChild(h1)
+
+// Display the featured post info
+const featured = document.createElement("div")
+featured.id = "featured"
+featured.dataset.slug = featuredPost.slug
+featured.dataset.title = featuredPost.title
+featured.textContent = `Featured: ${featuredPost.title}`
+nav.appendChild(featured)
 
 const list = document.createElement("ul")
 

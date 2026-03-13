@@ -30,6 +30,16 @@ test.describe("production build", () => {
 		await expect(items.nth(1).locator("a")).toContainText("Using Inkwell")
 	})
 
+	test("single content item import renders featured post", async ({
+		page,
+	}) => {
+		const featured = page.locator("#featured")
+		await expect(featured).toHaveCount(1)
+		await expect(featured).toHaveAttribute("data-slug", "hello-world")
+		await expect(featured).toHaveAttribute("data-title", "Hello World")
+		await expect(featured).toContainText("Featured: Hello World")
+	})
+
 	test("excludes draft posts from production build", async ({ page }) => {
 		const drafts = page.locator('nav ul li[data-slug="draft-post"]')
 		await expect(drafts).toHaveCount(0)

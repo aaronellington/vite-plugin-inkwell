@@ -16,6 +16,7 @@ import type { FeedConfig, InkwellOptions, ParsedContentItem } from "./types.js"
 
 const CONTENT_PREFIX = "inkwell:"
 const RESOLVED_PREFIX = "\0inkwell:"
+const RESOLVED_CONTENT_PREFIX = "\0inkwell-content:"
 const SLUG_SEPARATOR = "/"
 
 function escapeXml(str: string): string {
@@ -208,6 +209,50 @@ export function inkwell(options: InkwellOptions): Plugin {
 		return `export default [\n${entries.join(",\n")}\n];\n`
 	}
 
+	function generateContentItemModule(
+		absoluteDir: string,
+		name: string,
+		slug: string,
+	): string {
+		const allItems = collections.get(absoluteDir)
+		if (!allItems) {
+			throw new Error(`No content collection for directory: ${absoluteDir}`)
+		}
+
+		const items = getVisibleItems(allItems)
+		const item = items.find((i) => i.frontmatter.slug === slug)
+		if (!item) {
+			throw new Error(
+				`Content item with slug "${slug}" not found in collection "${name}"`,
+			)
+		}
+
+		const basePath = getBasePath(name)
+		const slugPrefix = CONTENT_PREFIX + absoluteDir + SLUG_SEPARATOR
+		const itemPath = `${basePath}${item.frontmatter.slug}`
+
+		const meta: Record<string, unknown> = { ...item.frontmatter }
+		delete meta.title
+		delete meta.slug
+		delete meta.date
+		delete meta.draft
+		delete meta.description
+
+		return [
+			`export default {`,
+			`  title: ${JSON.stringify(item.frontmatter.title)},`,
+			`  slug: ${JSON.stringify(item.frontmatter.slug)},`,
+			`  path: ${JSON.stringify(itemPath)},`,
+			`  date: new Date(${JSON.stringify(item.frontmatter.date)}),`,
+			`  draft: ${JSON.stringify(item.frontmatter.draft)},`,
+			`  description: ${JSON.stringify(item.frontmatter.description)},`,
+			`  directory: ${JSON.stringify(item.directoryPath)},`,
+			`  meta: ${JSON.stringify(meta)},`,
+			`  getHtml: () => import(${JSON.stringify(slugPrefix + item.frontmatter.slug)}).then(m => m.default),`,
+			`};`,
+		].join("\n")
+	}
+
 	function findItemBySlug(
 		absoluteDir: string,
 		slug: string,
@@ -271,7 +316,7 @@ export function inkwell(options: InkwellOptions): Plugin {
 				this.environment.moduleGraph.invalidateModule(mod)
 			}
 
-			// Invalidate the changed file's slug module
+			// Invalidate the changed file's slug module and content item module
 			const items = collections.get(matchedDir)
 			const changedItem = items?.find((item) => item.filePath === file)
 			if (changedItem) {
@@ -284,6 +329,17 @@ export function inkwell(options: InkwellOptions): Plugin {
 				if (slugModule) {
 					this.environment.moduleGraph.invalidateModule(slugModule)
 				}
+
+				const contentItemId =
+					RESOLVED_CONTENT_PREFIX +
+					matchedDir +
+					SLUG_SEPARATOR +
+					changedItem.frontmatter.slug
+				const contentItemModule =
+					this.environment.moduleGraph.getModuleById(contentItemId)
+				if (contentItemModule) {
+					this.environment.moduleGraph.invalidateModule(contentItemModule)
+				}
 			}
 
 			server.hot.send({ type: "full-reload" })
@@ -291,6 +347,24 @@ export function inkwell(options: InkwellOptions): Plugin {
 		},
 
 		load(id) {
+			// Handle single content item modules
+			if (id.startsWith(RESOLVED_CONTENT_PREFIX)) {
+				const rest = id.slice(RESOLVED_CONTENT_PREFIX.length)
+				const lastSlash = rest.lastIndexOf(SLUG_SEPARATOR)
+				if (lastSlash === -1) return null
+
+				const absoluteDir = rest.slice(0, lastSlash)
+				const slug = rest.slice(lastSlash + 1)
+				const name = dirToName.get(absoluteDir)
+				if (!name) {
+					throw new Error(
+						`No collection name found for directory: ${absoluteDir}`,
+					)
+				}
+
+				return generateContentItemModule(absoluteDir, name, slug)
+			}
+
 			if (!id.startsWith(RESOLVED_PREFIX)) return null
 
 			const rest = id.slice(RESOLVED_PREFIX.length)
@@ -378,6 +452,44 @@ export function inkwell(options: InkwellOptions): Plugin {
 			// If the path is already absolute (resolved from a slug module import), use it directly
 			if (path.isAbsolute(rawPath)) {
 				return RESOLVED_PREFIX + rawPath
+			}
+
+			// Check if this is a single-item import: "collectionName/path/to/file.md"
+			const slashIndex = rawPath.indexOf("/")
+			if (slashIndex !== -1 && rawPath.endsWith(".md")) {
+				const collectionName = rawPath.slice(0, slashIndex)
+				const mdPath = rawPath.slice(slashIndex + 1)
+				const absoluteDir = collectionDirs.get(collectionName)
+
+				if (absoluteDir && mdPath.length > 0) {
+					// Build the collection if we haven't yet
+					if (!collections.has(absoluteDir)) {
+						const items = buildCollection(absoluteDir)
+						collections.set(absoluteDir, items)
+
+						if (server) {
+							server.watcher.add(absoluteDir)
+						}
+						watchedDirs.add(absoluteDir)
+					}
+
+					// Resolve the .md path to a slug
+					const filePath = path.resolve(absoluteDir, mdPath)
+					const items = collections.get(absoluteDir)
+					const item = items?.find((i) => i.filePath === filePath)
+					if (!item) {
+						throw new Error(
+							`Content file "${mdPath}" not found in collection "${collectionName}"`,
+						)
+					}
+
+					return (
+						RESOLVED_CONTENT_PREFIX +
+						absoluteDir +
+						SLUG_SEPARATOR +
+						item.frontmatter.slug
+					)
+				}
 			}
 
 			// Look up by collection name
