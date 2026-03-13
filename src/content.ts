@@ -115,14 +115,40 @@ export function parseContentFile(
 		)
 	}
 
+	const dateInput =
+		typeof data.date === "string"
+			? data.date
+			: data.date instanceof Date
+				? data.date.toISOString()
+				: ""
+
+	const today = new Date().toISOString().slice(0, 10)
+
+	if (!dateInput) {
+		throw new Error(
+			`Missing "date" in frontmatter for ${filePath}\n` +
+				`  Expected format: "YYYY-MM-DD" (e.g. "${today}")`,
+		)
+	}
+
+	// Normalize bare date strings (e.g. "2025-01-15") to UTC by appending T00:00:00Z
+	// This prevents the build server's timezone from affecting the output
+	const normalizedDate = /^\d{4}-\d{2}-\d{2}$/.test(dateInput)
+		? `${dateInput}T00:00:00Z`
+		: dateInput
+
+	const parsed = new Date(normalizedDate)
+	if (Number.isNaN(parsed.getTime())) {
+		throw new Error(
+			`Invalid "date" in frontmatter for ${filePath}: "${dateInput}"\n` +
+				`  Expected format: "YYYY-MM-DD" (e.g. "${today}")`,
+		)
+	}
+
 	const frontmatter: ContentFrontmatter = {
 		...data,
-		date:
-			typeof data.date === "string"
-				? data.date
-				: data.date instanceof Date
-					? data.date.toISOString()
-					: "",
+		date: parsed.toISOString(),
+		description: typeof data.description === "string" ? data.description : "",
 		draft: data.draft === true,
 		slug,
 		title: typeof data.title === "string" ? data.title : "",

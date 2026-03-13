@@ -1,4 +1,4 @@
-import posts from "inkwell:../content"
+import posts from "inkwell:blog"
 import "./style.css"
 
 const app = document.getElementById("app") as HTMLElement
@@ -16,7 +16,8 @@ const list = document.createElement("ul")
 for (const post of posts) {
 	const li = document.createElement("li")
 	li.dataset.slug = post.slug
-	li.dataset.date = post.date
+	li.dataset.path = post.path
+	li.dataset.date = post.date.toISOString()
 	li.dataset.draft = String(post.draft)
 	li.dataset.directory = post.directory
 	li.dataset.meta = JSON.stringify(post.meta)
@@ -26,7 +27,7 @@ for (const post of posts) {
 	link.textContent = post.title || post.slug
 
 	const date = document.createElement("small")
-	date.textContent = post.date
+	date.textContent = post.date.toLocaleDateString()
 
 	link.addEventListener("click", async (e) => {
 		e.preventDefault()
