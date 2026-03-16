@@ -80,7 +80,10 @@ const FILE_EXT_REGEX = /\.\w{1,10}$/
 const assetLinkExtension: MarkedExtension = {
 	renderer: {
 		link({ href, text }) {
-			if (href && FILE_EXT_REGEX.test(href)) {
+			if (
+				href &&
+				(FILE_EXT_REGEX.test(href) || /^https?:\/\//.test(href))
+			) {
 				return `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`
 			}
 			return false

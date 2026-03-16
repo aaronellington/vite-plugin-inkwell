@@ -17,3 +17,5 @@ Inkwell turns markdown files into importable content collections.
 Each post's HTML is lazy-loaded via `getHtml()`.
 
 [Download the sample graphic](./images/sample.svg)
+
+[Visit Example Site](https://example.com)
