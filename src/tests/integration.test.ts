@@ -134,6 +134,16 @@ test.describe("atom feed", () => {
 		)
 	})
 
+	test("asset URLs in feed content are resolved, not placeholders", () => {
+		// The feed should NOT contain any unresolved asset placeholders
+		expect(feed).not.toMatch(/__CONTENT_ASSET_\d+__/)
+
+		// The Hello World post has an image; its src should be a full URL
+		expect(feed).toMatch(
+			/src="https:\/\/example\.com\/assets\/sample-[a-zA-Z0-9]+\.svg"/,
+		)
+	})
+
 	test("entries include summary from frontmatter description", () => {
 		expect(feed).toContain(
 			"<summary>The first post demonstrating Inkwell content collections.</summary>",

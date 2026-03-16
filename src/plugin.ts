@@ -376,7 +376,28 @@ export function inkwell(options: InkwellOptions): Plugin {
 				const items = getVisibleItems(allItems)
 				const basePath = getBasePath(name)
 				const feed = collectionConfig.feed
-				const atomXml = generateAtomXml(items, feed, basePath)
+
+				// Resolve asset placeholders to final hashed URLs for the feed
+				const resolvedItems = items.map((item) => {
+					if (item.assets.length === 0) return item
+
+					let html = item.html
+					for (const asset of item.assets) {
+						const source = fs.readFileSync(asset.absolutePath)
+						const refId = this.emitFile({
+							type: "asset",
+							name: path.basename(asset.absolutePath),
+							source,
+						})
+						const fileName = this.getFileName(refId)
+						const assetUrl = `${feed.siteUrl.replace(/\/+$/, "")}/${fileName}`
+						html = html.split(asset.placeholderToken).join(assetUrl)
+					}
+
+					return { ...item, html }
+				})
+
+				const atomXml = generateAtomXml(resolvedItems, feed, basePath)
 
 				this.emitFile({
 					type: "asset",
