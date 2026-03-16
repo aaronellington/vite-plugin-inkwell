@@ -66,9 +66,20 @@ test.describe("production build", () => {
 	test("links with file extensions get target=_blank", async ({ page }) => {
 		await page.locator("nav ul li").nth(0).locator("a").click()
 
-		const assetLink = page.locator('#detail a[target="_blank"]')
+		const assetLink = page.locator('#detail a[target="_blank"][href*="sample"]')
 		await expect(assetLink).toHaveCount(1)
 		await expect(assetLink).toHaveAttribute("rel", "noopener noreferrer")
+	})
+
+	test("external http links get target=_blank", async ({ page }) => {
+		await page.locator("nav ul li").nth(0).locator("a").click()
+
+		const externalLink = page.locator(
+			'#detail a[target="_blank"][href^="https://example.com"]',
+		)
+		await expect(externalLink).toHaveCount(1)
+		await expect(externalLink).toHaveAttribute("rel", "noopener noreferrer")
+		await expect(externalLink).toHaveText("Visit Example Site")
 	})
 })
 
