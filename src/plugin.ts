@@ -39,14 +39,18 @@ function isValidDate(dateStr: string): boolean {
 	return !Number.isNaN(d.getTime())
 }
 
-function generateRssXml(
+function toIso(dateStr: string): string {
+	return new Date(dateStr).toISOString().replace(/\.\d{3}Z$/, "Z")
+}
+
+function generateAtomXml(
 	items: ParsedContentItem[],
 	feed: FeedConfig,
 	basePath: string,
 ): string {
-	const normalizedSiteUrl = feed.siteUrl.replace(/\/+$/, "")
+	const siteUrl = feed.siteUrl.replace(/\/+$/, "")
 	const normalizedBasePath = normalizeBasePath(basePath)
-	const feedUrl = `${normalizedSiteUrl}/${feed.outputPath.replace(/^\//, "")}`
+	const feedUrl = `${siteUrl}/${feed.outputPath.replace(/^\//, "")}`
 
 	const sortedItems = [...items].sort(
 		(a, b) =>
@@ -54,44 +58,58 @@ function generateRssXml(
 			new Date(a.frontmatter.date).getTime(),
 	)
 
-	const itemsXml = sortedItems
+	const latestDate =
+		sortedItems.length > 0 && isValidDate(sortedItems[0].frontmatter.date)
+			? toIso(sortedItems[0].frontmatter.date)
+			: new Date().toISOString().replace(/\.\d{3}Z$/, "Z")
+
+	const entriesXml = sortedItems
 		.map((item) => {
-			const link = `${normalizedSiteUrl}${normalizedBasePath}${item.frontmatter.slug}`
+			const link = `${siteUrl}${normalizedBasePath}${item.frontmatter.slug}`
 			const lines = [
-				"      <item>",
-				`        <title>${escapeXml(item.frontmatter.title)}</title>`,
-				`        <link>${escapeXml(link)}</link>`,
-				`        <guid>${escapeXml(link)}</guid>`,
+				"  <entry>",
+				`    <title>${escapeXml(item.frontmatter.title)}</title>`,
+				`    <link rel="alternate" type="text/html" href="${escapeXml(link)}"/>`,
+				`    <id>${escapeXml(link)}</id>`,
 			]
 			if (isValidDate(item.frontmatter.date)) {
-				lines.push(
-					`        <pubDate>${new Date(item.frontmatter.date).toUTCString()}</pubDate>`,
-				)
+				const iso = toIso(item.frontmatter.date)
+				lines.push(`    <published>${iso}</published>`)
+				lines.push(`    <updated>${iso}</updated>`)
 			}
+
 			if (item.frontmatter.description) {
 				lines.push(
-					`        <description>${escapeXml(item.frontmatter.description)}</description>`,
+					`    <summary>${escapeXml(item.frontmatter.description)}</summary>`,
 				)
 			}
-			lines.push("      </item>")
+			lines.push(
+				`    <content type="html" xml:base="${escapeXml(siteUrl + normalizedBasePath)}" xml:lang="${escapeXml(feed.language)}"><![CDATA[${item.html}]]></content>`,
+			)
+			lines.push("  </entry>")
 			return lines.join("\n")
 		})
 		.join("\n")
 
-	return [
-		'<?xml version="1.0" encoding="UTF-8"?>',
-		'<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">',
-		"  <channel>",
-		`    <title>${escapeXml(feed.siteTitle)}</title>`,
-		`    <link>${escapeXml(normalizedSiteUrl)}</link>`,
-		`    <description>${escapeXml(feed.siteDescription || feed.siteTitle)}</description>`,
-		`    <language>${escapeXml(feed.language)}</language>`,
-		`    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>`,
-		`    <atom:link href="${escapeXml(feedUrl)}" rel="self" type="application/rss+xml"/>`,
-		itemsXml,
-		"  </channel>",
-		"</rss>",
-	].join("\n")
+	const feedLines = [
+		'<?xml version="1.0" encoding="utf-8"?>',
+		'<feed xmlns="http://www.w3.org/2005/Atom">',
+		`  <title>${escapeXml(feed.siteTitle)}</title>`,
+		`  <subtitle>${escapeXml(feed.siteDescription || feed.siteTitle)}</subtitle>`,
+		`  <link rel="alternate" type="text/html" href="${escapeXml(siteUrl)}/"/>`,
+		`  <link rel="self" type="application/atom+xml" href="${escapeXml(feedUrl)}"/>`,
+		`  <id>${escapeXml(feedUrl)}</id>`,
+		`  <updated>${latestDate}</updated>`,
+	]
+
+	if (feed.copyright) {
+		feedLines.push(`  <rights>${escapeXml(feed.copyright)}</rights>`)
+	}
+
+	feedLines.push(entriesXml)
+	feedLines.push("</feed>")
+
+	return feedLines.join("\n")
 }
 
 export function inkwell(options: InkwellOptions): Plugin {
@@ -358,12 +376,12 @@ export function inkwell(options: InkwellOptions): Plugin {
 				const items = getVisibleItems(allItems)
 				const basePath = getBasePath(name)
 				const feed = collectionConfig.feed
-				const rssXml = generateRssXml(items, feed, basePath)
+				const atomXml = generateAtomXml(items, feed, basePath)
 
 				this.emitFile({
 					type: "asset",
 					fileName: feed.outputPath.replace(/^\//, ""),
-					source: rssXml,
+					source: atomXml,
 				})
 			}
 		},

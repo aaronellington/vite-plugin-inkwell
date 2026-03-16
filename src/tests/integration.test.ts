@@ -72,67 +72,74 @@ test.describe("production build", () => {
 	})
 })
 
-test.describe("rss feed", () => {
-	let rss: string
+test.describe("atom feed", () => {
+	let feed: string
 
 	test.beforeAll(async () => {
 		const baseURL = `http://localhost:${process.env.PREVIEW_PORT}`
 		const response = await fetch(`${baseURL}/rss.xml`)
 		expect(response.ok).toBe(true)
-		rss = await response.text()
+		feed = await response.text()
 	})
 
-	test("rss.xml is valid RSS 2.0 with correct channel info", () => {
-		expect(rss).toContain('<?xml version="1.0" encoding="UTF-8"?>')
-		expect(rss).toContain(
-			'<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">',
+	test("rss.xml is valid Atom 1.0 with correct feed metadata", () => {
+		expect(feed).toContain('<?xml version="1.0" encoding="utf-8"?>')
+		expect(feed).toContain('<feed xmlns="http://www.w3.org/2005/Atom">')
+		expect(feed).toContain("<title>Inkwell Example</title>")
+		expect(feed).toContain(
+			"<subtitle>An example Atom feed from Inkwell</subtitle>",
 		)
-		expect(rss).toContain("<title>Inkwell Example</title>")
-		expect(rss).toContain("<link>https://example.com</link>")
-		expect(rss).toContain(
-			"<description>An example RSS feed from Inkwell</description>",
+		expect(feed).toContain(
+			'<link rel="alternate" type="text/html" href="https://example.com/"/>',
 		)
-		expect(rss).toContain("<language>en</language>")
-		expect(rss).toContain("<lastBuildDate>")
-		expect(rss).toContain(
-			'<atom:link href="https://example.com/rss.xml" rel="self" type="application/rss+xml"/>',
+		expect(feed).toContain(
+			'<link rel="self" type="application/atom+xml" href="https://example.com/rss.xml"/>',
 		)
+		expect(feed).toContain("<id>https://example.com/rss.xml</id>")
+		expect(feed).toContain("<updated>")
+		expect(feed).toContain("<rights>Copyright © 2025, Inkwell Team</rights>")
 	})
 
-	test("rss.xml contains non-draft posts sorted by date descending", () => {
+	test("entries are sorted by date descending and exclude drafts", () => {
 		// Should contain the two non-draft posts
-		expect(rss).toContain("<title>Using Inkwell</title>")
-		expect(rss).toContain("<title>Hello World</title>")
+		expect(feed).toContain("<title>Using Inkwell</title>")
+		expect(feed).toContain("<title>Hello World</title>")
 
 		// Should NOT contain the draft post
-		expect(rss).not.toContain("<title>Work in Progress</title>")
+		expect(feed).not.toContain("<title>Work in Progress</title>")
 
 		// Using Inkwell (2025-02-20) should appear before Hello World (2025-01-15)
-		const usingInkwellPos = rss.indexOf("<title>Using Inkwell</title>")
-		const helloWorldPos = rss.indexOf("<title>Hello World</title>")
+		const usingInkwellPos = feed.indexOf("<title>Using Inkwell</title>")
+		const helloWorldPos = feed.indexOf("<title>Hello World</title>")
 		expect(usingInkwellPos).toBeLessThan(helloWorldPos)
 	})
 
-	test("rss.xml items have correct links and pubDates", () => {
-		expect(rss).toContain(
-			"<link>https://example.com/blog/using-inkwell-slug</link>",
-		)
-		expect(rss).toContain("<link>https://example.com/blog/hello-world</link>")
+	test("entries have correct links and timestamps", () => {
+		expect(feed).toContain('href="https://example.com/blog/using-inkwell-slug"')
+		expect(feed).toContain('href="https://example.com/blog/hello-world"')
 
-		expect(rss).toContain(
-			`<pubDate>${new Date("2025-02-20").toUTCString()}</pubDate>`,
-		)
-		expect(rss).toContain(
-			`<pubDate>${new Date("2025-01-15").toUTCString()}</pubDate>`,
+		expect(feed).toContain("<published>2025-02-20T00:00:00Z</published>")
+		expect(feed).toContain("<published>2025-01-15T00:00:00Z</published>")
+	})
+
+	test("entries include full HTML content in CDATA", () => {
+		expect(feed).toContain('<content type="html"')
+		expect(feed).toContain('xml:lang="en"')
+		expect(feed).toContain("<![CDATA[")
+		expect(feed).toContain("]]></content>")
+		// Verify actual post content is in the feed
+		expect(feed).toContain("This is the first post demonstrating Inkwell.")
+		expect(feed).toContain(
+			"This post demonstrates a custom slug and extra frontmatter fields.",
 		)
 	})
 
-	test("rss.xml item descriptions come from frontmatter", () => {
-		expect(rss).toContain(
-			"<description>The first post demonstrating Inkwell content collections.</description>",
+	test("entries include summary from frontmatter description", () => {
+		expect(feed).toContain(
+			"<summary>The first post demonstrating Inkwell content collections.</summary>",
 		)
-		expect(rss).toContain(
-			"<description>A guide to custom slugs and extra frontmatter fields in Inkwell.</description>",
+		expect(feed).toContain(
+			"<summary>A guide to custom slugs and extra frontmatter fields in Inkwell.</summary>",
 		)
 	})
 })

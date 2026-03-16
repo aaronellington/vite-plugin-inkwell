@@ -28,16 +28,18 @@ export interface ParsedContentItem {
 }
 
 export interface FeedConfig {
-	/** Output filename for the RSS feed (e.g. "rss.xml") */
+	/** Output filename for the Atom feed (e.g. "feed.xml") */
 	outputPath: string
-	/** Site title used in the RSS channel */
+	/** Site title used in the Atom feed */
 	siteTitle: string
-	/** Site URL used for building item links (e.g. "https://example.com") */
+	/** Site URL used for building entry links (e.g. "https://example.com") */
 	siteUrl: string
-	/** RSS language code (e.g. "en", "en-us", "fr") */
+	/** Language code applied as xml:lang on the feed (e.g. "en", "en-us") */
 	language: string
-	/** Site description used in the RSS channel. Defaults to siteTitle */
+	/** Subtitle shown below the feed title. Defaults to siteTitle */
 	siteDescription?: string
+	/** Copyright / rights string (e.g. "Copyright © 2026, Jane Doe") */
+	copyright?: string
 }
 
 export interface CollectionConfig {

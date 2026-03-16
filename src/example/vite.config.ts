@@ -1,5 +1,5 @@
-import { inkwell } from "@aaronellington/vite-plugin-inkwell"
 import { defineConfig, loadEnv } from "vite"
+import { inkwell } from "../index"
 
 export default defineConfig(({ mode }) => {
 	const env = loadEnv(mode, import.meta.dirname)
@@ -15,8 +15,9 @@ export default defineConfig(({ mode }) => {
 							outputPath: "rss.xml",
 							siteTitle: "Inkwell Example",
 							siteUrl: env.VITE_SITE_URL,
-							siteDescription: "An example RSS feed from Inkwell",
+							siteDescription: "An example Atom feed from Inkwell",
 							language: "en",
+							copyright: "Copyright © 2025, Inkwell Team",
 						},
 					},
 				},
