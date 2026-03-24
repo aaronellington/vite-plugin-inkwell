@@ -46,7 +46,7 @@
 		"@types/node": "^25.3.3",
 		"prettier": "^3.8.1",
 		"sirv": "^3.0.2",
-		"typescript": "^5.9.3",
+		"typescript": "^6.0.2",
 		"vite": "^8.0.1"
 	},
 	"peerDependencies": {
