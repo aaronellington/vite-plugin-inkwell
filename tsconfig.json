@@ -6,6 +6,7 @@
 		"module": "ESNext",
 		"moduleResolution": "bundler",
 		"outDir": "dist",
+		"rootDir": ".",
 		"sourceMap": true,
 		"tsBuildInfoFile": ".config/tmp/root.tsbuildinfo",
 		"noFallthroughCasesInSwitch": true,

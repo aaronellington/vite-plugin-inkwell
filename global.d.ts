@@ -3,3 +3,5 @@ declare module "inkwell:*" {
 	const collection: Content[]
 	export default collection
 }
+
+declare module "*.css" {}
