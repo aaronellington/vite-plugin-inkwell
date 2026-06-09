@@ -69,6 +69,12 @@ export interface Content {
 	directory: string
 	/** All frontmatter key-value pairs not covered by other fields */
 	meta: Record<string, unknown>
-	/** Lazy-load the rendered HTML for this content item */
+	/**
+	 * Resolve the rendered HTML for this content item.
+	 *
+	 * With the `inkwell:` protocol the HTML is fetched lazily as a separate
+	 * chunk. With the `inkwell-embedded:` protocol the HTML is bundled inline,
+	 * so the returned promise resolves immediately with no network round-trip.
+	 */
 	getHtml: () => Promise<string>
 }

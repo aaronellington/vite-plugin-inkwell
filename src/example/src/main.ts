@@ -1,4 +1,5 @@
 import posts from "inkwell:blog"
+import embedded from "inkwell-embedded:blog"
 import "./style.css"
 
 const app = document.getElementById("app") as HTMLElement
@@ -44,3 +45,21 @@ for (const post of posts) {
 nav.appendChild(list)
 app.appendChild(nav)
 app.appendChild(detail)
+
+// Embedded collection: HTML is bundled inline, so getHtml() resolves
+// immediately with no network round-trip — render every post on page load.
+const embeddedSection = document.createElement("section")
+embeddedSection.id = "embedded"
+
+for (const post of embedded) {
+	const article = document.createElement("article")
+	article.className = "embedded-post"
+	article.dataset.slug = post.slug
+	embeddedSection.appendChild(article)
+
+	post.getHtml().then((html: string) => {
+		article.innerHTML = html
+	})
+}
+
+app.appendChild(embeddedSection)

@@ -4,4 +4,10 @@ declare module "inkwell:*" {
 	export default collection
 }
 
+declare module "inkwell-embedded:*" {
+	import type { Content } from "@aaronellington/vite-plugin-inkwell"
+	const collection: Content[]
+	export default collection
+}
+
 declare module "*.css" {}

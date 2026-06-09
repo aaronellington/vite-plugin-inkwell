@@ -83,6 +83,48 @@ test.describe("production build", () => {
 	})
 })
 
+test.describe("embedded collection", () => {
+	test.beforeEach(async ({ page }) => {
+		await page.goto("/")
+	})
+
+	test("renders post HTML on load without a click", async ({ page }) => {
+		// No interaction — embedded content is inlined and resolves immediately.
+		const articles = page.locator("#embedded .embedded-post")
+		await expect(articles).toHaveCount(2)
+
+		const helloWorld = page.locator(
+			'#embedded .embedded-post[data-slug="hello-world"]',
+		)
+		await expect(helloWorld.locator("h1")).toHaveText("Hello World")
+		await expect(helloWorld).toContainText(
+			"This is the first post demonstrating Inkwell.",
+		)
+	})
+
+	test("excludes draft posts from production build", async ({ page }) => {
+		const drafts = page.locator(
+			'#embedded .embedded-post[data-slug="draft-post"]',
+		)
+		await expect(drafts).toHaveCount(0)
+	})
+
+	test("asset images resolve to hashed URLs", async ({ page }) => {
+		const img = page.locator(
+			'#embedded .embedded-post[data-slug="hello-world"] img',
+		)
+		await expect(img).toHaveCount(1)
+
+		const src = await img.getAttribute("src")
+		expect(src).toBeTruthy()
+		expect((src as string).startsWith(`/${DIR_ASSETS}/`)).toBe(true)
+		expect(src).toMatch(/-[a-zA-Z0-9]{8}\.\w+$/) // e.g. sample-Cr3NeDLH.svg
+
+		const response = await page.request.get(src as string)
+		expect(response.ok()).toBe(true)
+	})
+})
+
 test.describe("atom feed", () => {
 	let feed: string
 
@@ -194,6 +236,18 @@ test.describe("dev mode", () => {
 		const draftItem = page.locator('nav ul li[data-draft="true"]')
 		await expect(draftItem).toHaveCount(1)
 		await expect(draftItem).toHaveAttribute("data-slug", "draft-post")
+	})
+
+	test("includes draft posts in embedded collection in dev mode", async ({
+		page,
+	}) => {
+		await page.goto(devURL)
+
+		const articles = page.locator("#embedded .embedded-post")
+		await expect(articles).toHaveCount(3)
+		await expect(
+			page.locator('#embedded .embedded-post[data-slug="draft-post"]'),
+		).toHaveCount(1)
 	})
 
 	test("new markdown file appears via HMR without manual reload", async ({

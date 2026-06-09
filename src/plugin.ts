@@ -16,6 +16,8 @@ import type { FeedConfig, InkwellOptions, ParsedContentItem } from "./types.js"
 
 const CONTENT_PREFIX = "inkwell:"
 const RESOLVED_PREFIX = "\0inkwell:"
+const EMBEDDED_CONTENT_PREFIX = "inkwell-embedded:"
+const EMBEDDED_RESOLVED_PREFIX = "\0inkwell-embedded:"
 const SLUG_SEPARATOR = "/"
 
 function escapeXml(str: string): string {
@@ -155,6 +157,19 @@ export function inkwell(options: InkwellOptions): Plugin {
 		return items
 	}
 
+	function ensureCollectionBuilt(absoluteDir: string): void {
+		if (collections.has(absoluteDir)) return
+
+		const items = buildCollection(absoluteDir)
+		collections.set(absoluteDir, items)
+
+		// Watch directory for HMR
+		if (server) {
+			server.watcher.add(absoluteDir)
+		}
+		watchedDirs.add(absoluteDir)
+	}
+
 	function getVisibleItems(items: ParsedContentItem[]): ParsedContentItem[] {
 		if (isProduction) {
 			return items.filter((item) => !item.frontmatter.draft)
@@ -185,6 +200,29 @@ export function inkwell(options: InkwellOptions): Plugin {
 		}
 	}
 
+	function entryCommonLines(
+		item: ParsedContentItem,
+		itemPath: string,
+	): string[] {
+		const meta: Record<string, unknown> = { ...item.frontmatter }
+		delete meta.title
+		delete meta.slug
+		delete meta.date
+		delete meta.draft
+		delete meta.description
+
+		return [
+			`    title: ${JSON.stringify(item.frontmatter.title)},`,
+			`    slug: ${JSON.stringify(item.frontmatter.slug)},`,
+			`    path: ${JSON.stringify(itemPath)},`,
+			`    date: new Date(${JSON.stringify(item.frontmatter.date)}),`,
+			`    draft: ${JSON.stringify(item.frontmatter.draft)},`,
+			`    description: ${JSON.stringify(item.frontmatter.description)},`,
+			`    directory: ${JSON.stringify(item.directoryPath)},`,
+			`    meta: ${JSON.stringify(meta)},`,
+		]
+	}
+
 	function generateCollectionModule(absoluteDir: string, name: string): string {
 		const allItems = collections.get(absoluteDir)
 		if (!allItems) {
@@ -199,31 +237,73 @@ export function inkwell(options: InkwellOptions): Plugin {
 		const basePath = getBasePath(name)
 
 		const entries = items.map((item) => {
-			const meta: Record<string, unknown> = { ...item.frontmatter }
-			delete meta.title
-			delete meta.slug
-			delete meta.date
-			delete meta.draft
-			delete meta.description
-
 			const itemPath = `${basePath}${item.frontmatter.slug}`
 
 			return [
 				"  {",
-				`    title: ${JSON.stringify(item.frontmatter.title)},`,
-				`    slug: ${JSON.stringify(item.frontmatter.slug)},`,
-				`    path: ${JSON.stringify(itemPath)},`,
-				`    date: new Date(${JSON.stringify(item.frontmatter.date)}),`,
-				`    draft: ${JSON.stringify(item.frontmatter.draft)},`,
-				`    description: ${JSON.stringify(item.frontmatter.description)},`,
-				`    directory: ${JSON.stringify(item.directoryPath)},`,
-				`    meta: ${JSON.stringify(meta)},`,
+				...entryCommonLines(item, itemPath),
 				`    getHtml: () => import(${JSON.stringify(slugPrefix + item.frontmatter.slug)}).then(m => m.default),`,
 				"  }",
 			].join("\n")
 		})
 
 		return `export default [\n${entries.join(",\n")}\n];\n`
+	}
+
+	function generateEmbeddedCollectionModule(
+		absoluteDir: string,
+		name: string,
+	): string {
+		const allItems = collections.get(absoluteDir)
+		if (!allItems) {
+			throw new Error(`No content collection for directory: ${absoluteDir}`)
+		}
+
+		checkDuplicatePaths()
+
+		const items = getVisibleItems(allItems)
+		const basePath = getBasePath(name)
+
+		const importLines: string[] = []
+		const htmlConstLines: string[] = []
+		let assetIndex = 0
+
+		const entries = items.map((item, i) => {
+			const itemPath = `${basePath}${item.frontmatter.slug}`
+
+			// Build the inline HTML expression. Assets are hoisted to top-level
+			// imports so Vite resolves them to hashed URLs, then substituted into
+			// the HTML string at module-eval time (no async, no extra chunk).
+			let htmlExpr: string
+			if (item.assets.length === 0) {
+				htmlExpr = JSON.stringify(item.html)
+			} else {
+				let expr = JSON.stringify(item.html)
+				for (const asset of item.assets) {
+					const v = `__asset_${assetIndex++}__`
+					importLines.push(
+						`import ${v} from ${JSON.stringify(asset.absolutePath)};`,
+					)
+					expr += `.replaceAll(${JSON.stringify(asset.placeholderToken)}, ${v})`
+				}
+				const constName = `__html_${i}__`
+				htmlConstLines.push(`const ${constName} = ${expr};`)
+				htmlExpr = constName
+			}
+
+			return [
+				"  {",
+				...entryCommonLines(item, itemPath),
+				`    getHtml: () => Promise.resolve(${htmlExpr}),`,
+				"  }",
+			].join("\n")
+		})
+
+		const parts: string[] = []
+		if (importLines.length > 0) parts.push(importLines.join("\n"))
+		if (htmlConstLines.length > 0) parts.push(htmlConstLines.join("\n"))
+		parts.push(`export default [\n${entries.join(",\n")}\n];\n`)
+		return parts.join("\n\n")
 	}
 
 	function findItemBySlug(
@@ -282,11 +362,15 @@ export function inkwell(options: InkwellOptions): Plugin {
 				return []
 			}
 
-			// Invalidate the collection module
-			const collectionId = RESOLVED_PREFIX + matchedDir
-			const mod = this.environment.moduleGraph.getModuleById(collectionId)
-			if (mod) {
-				this.environment.moduleGraph.invalidateModule(mod)
+			// Invalidate the collection modules (lazy + embedded variants)
+			for (const collectionId of [
+				RESOLVED_PREFIX + matchedDir,
+				EMBEDDED_RESOLVED_PREFIX + matchedDir,
+			]) {
+				const mod = this.environment.moduleGraph.getModuleById(collectionId)
+				if (mod) {
+					this.environment.moduleGraph.invalidateModule(mod)
+				}
 			}
 
 			// Invalidate the changed file's slug module
@@ -309,6 +393,17 @@ export function inkwell(options: InkwellOptions): Plugin {
 		},
 
 		load(id) {
+			if (id.startsWith(EMBEDDED_RESOLVED_PREFIX)) {
+				const absoluteDir = id.slice(EMBEDDED_RESOLVED_PREFIX.length)
+				const name = dirToName.get(absoluteDir)
+				if (!name) {
+					throw new Error(
+						`No collection name found for directory: ${absoluteDir}`,
+					)
+				}
+				return generateEmbeddedCollectionModule(absoluteDir, name)
+			}
+
 			if (!id.startsWith(RESOLVED_PREFIX)) return null
 
 			const rest = id.slice(RESOLVED_PREFIX.length)
@@ -410,6 +505,20 @@ export function inkwell(options: InkwellOptions): Plugin {
 		name: "inkwell",
 
 		resolveId(source) {
+			// Embedded protocol: content inlined into the collection module
+			if (source.startsWith(EMBEDDED_CONTENT_PREFIX)) {
+				const name = source.slice(EMBEDDED_CONTENT_PREFIX.length)
+				const absoluteDir = collectionDirs.get(name)
+				if (!absoluteDir) {
+					throw new Error(
+						`Collection "${name}" is not defined in inkwell options. ` +
+							`Available collections: ${[...collectionDirs.keys()].join(", ")}`,
+					)
+				}
+				ensureCollectionBuilt(absoluteDir)
+				return EMBEDDED_RESOLVED_PREFIX + absoluteDir
+			}
+
 			if (!source.startsWith(CONTENT_PREFIX)) return null
 
 			const rawPath = source.slice(CONTENT_PREFIX.length)
@@ -428,17 +537,7 @@ export function inkwell(options: InkwellOptions): Plugin {
 				)
 			}
 
-			// Build the collection if we haven't yet
-			if (!collections.has(absoluteDir)) {
-				const items = buildCollection(absoluteDir)
-				collections.set(absoluteDir, items)
-
-				// Watch directory for HMR
-				if (server) {
-					server.watcher.add(absoluteDir)
-				}
-				watchedDirs.add(absoluteDir)
-			}
+			ensureCollectionBuilt(absoluteDir)
 
 			return RESOLVED_PREFIX + absoluteDir
 		},
