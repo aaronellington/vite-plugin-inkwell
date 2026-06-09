@@ -15,12 +15,13 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 22
           cache: npm
 
       - run: npm ci
       - run: npm run lint
       - run: npx playwright install chromium --with-deps
+        timeout-minutes: 5
       - run: npm test
       - run: npm run build
 

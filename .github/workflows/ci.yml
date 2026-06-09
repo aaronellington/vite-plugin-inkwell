@@ -20,4 +20,5 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npx playwright install chromium --with-deps
+        timeout-minutes: 5
       - run: npm test
