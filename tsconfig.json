@@ -5,7 +5,7 @@
 		"lib": ["ES2022"],
 		"module": "ESNext",
 		"moduleResolution": "bundler",
-		"outDir": "dist",
+		"outDir": ".config/tmp/check",
 		"rootDir": ".",
 		"sourceMap": true,
 		"tsBuildInfoFile": ".config/tmp/root.tsbuildinfo",
