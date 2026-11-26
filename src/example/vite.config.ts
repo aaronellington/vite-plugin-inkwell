@@ -1,3 +1,4 @@
+import markedFootnote from "marked-footnote"
 import { defineConfig, loadEnv } from "vite"
 import { inkwell } from "../index"
 
@@ -21,6 +22,7 @@ export default defineConfig(({ mode }) => {
 						},
 					},
 				},
+				markedExtensions: [markedFootnote()],
 			}),
 		],
 	}

@@ -83,6 +83,57 @@ test.describe("production build", () => {
 	})
 })
 
+test.describe("marked extensions", () => {
+	test.beforeEach(async ({ page }) => {
+		await page.goto("/")
+	})
+
+	test("footnote references and section render in lazy HTML", async ({
+		page,
+	}) => {
+		await page.locator('nav ul li[data-slug="using-inkwell-slug"] a').click()
+
+		const detail = page.locator("#detail")
+		await expect(detail.locator("sup a[data-footnote-ref]")).toHaveCount(2)
+		await expect(
+			detail.locator('a[data-footnote-ref][href="#footnote-1"]'),
+		).toHaveCount(1)
+
+		const footnotes = detail.locator("section.footnotes[data-footnotes] ol li")
+		await expect(footnotes).toHaveCount(2)
+		await expect(footnotes.nth(0)).toContainText(
+			"Any synchronous marked extension can be added the same way.",
+		)
+	})
+
+	test("one-word footnote definition renders as a footnote, not a link", async ({
+		page,
+	}) => {
+		await page.locator('nav ul li[data-slug="using-inkwell-slug"] a').click()
+
+		const detail = page.locator("#detail")
+		await expect(detail.locator("li#footnote-2")).toContainText("Ibid.")
+		await expect(detail.locator('a[href="Ibid."]')).toHaveCount(0)
+	})
+
+	test("footnotes render in embedded HTML", async ({ page }) => {
+		const post = page.locator(
+			'#embedded .embedded-post[data-slug="using-inkwell-slug"]',
+		)
+		await expect(post.locator("sup a[data-footnote-ref]")).toHaveCount(2)
+		await expect(post.locator("section.footnotes ol li")).toHaveCount(2)
+	})
+
+	test("built-in link handling still applies with extensions", async ({
+		page,
+	}) => {
+		await page.locator('nav ul li[data-slug="hello-world"] a').click()
+		await expect(
+			page.locator('#detail a[target="_blank"][href^="https://example.com"]'),
+		).toHaveCount(1)
+	})
+})
+
 test.describe("embedded collection", () => {
 	test.beforeEach(async ({ page }) => {
 		await page.goto("/")
@@ -195,6 +246,11 @@ test.describe("atom feed", () => {
 		expect(feed).toMatch(
 			/src="https:\/\/example\.com\/assets\/sample-[a-zA-Z0-9]+\.svg"/,
 		)
+	})
+
+	test("entry content includes footnotes from marked extensions", () => {
+		expect(feed).toContain("data-footnote-ref")
+		expect(feed).toContain('<section class="footnotes" data-footnotes>')
 	})
 
 	test("entries include summary from frontmatter description", () => {

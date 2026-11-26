@@ -88,12 +88,22 @@ const assetLinkExtension: MarkedExtension = {
 	},
 }
 
-export function createRenderer(extensions: MarkedExtension[]): Marked {
+/**
+ * Create the marked instance used for every collection.
+ *
+ * User extensions are registered first and the built-in link extension last.
+ * marked tries renderer overrides from the most recently registered one
+ * backwards, so the built-in `link` renderer always runs first: it handles
+ * external and file-extension links (adding `target="_blank"`) and returns
+ * `false` for every other link, which falls through to any user `link`
+ * renderer and then to marked's default.
+ */
+export function createRenderer(extensions: MarkedExtension[] = []): Marked {
 	const marked = new Marked()
-	marked.use(assetLinkExtension)
 	if (extensions.length > 0) {
 		marked.use(...extensions)
 	}
+	marked.use(assetLinkExtension)
 	return marked
 }
 

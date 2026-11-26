@@ -119,7 +119,7 @@ export function inkwell(options: InkwellOptions): Plugin {
 	let server: ViteDevServer | undefined
 	let isProduction = false
 
-	const renderer = createRenderer([])
+	const renderer = createRenderer(options.markedExtensions)
 
 	// Map from collection name to its resolved absolute directory path
 	const collectionDirs = new Map<string, string>()
