@@ -9,5 +9,3 @@ declare module "inkwell-embedded:*" {
 	const collection: Content[]
 	export default collection
 }
-
-declare module "*.css" {}
