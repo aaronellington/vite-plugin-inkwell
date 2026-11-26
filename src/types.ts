@@ -1,3 +1,5 @@
+import type { MarkedExtension } from "marked"
+
 export interface ContentFrontmatter {
 	title: string
 	slug: string
@@ -34,7 +36,7 @@ export interface FeedConfig {
 	siteTitle: string
 	/** Site URL used for building entry links (e.g. "https://example.com") */
 	siteUrl: string
-	/** Language code applied as xml:lang on the feed (e.g. "en", "en-us") */
+	/** Language code applied as xml:lang on each entry's content (e.g. "en", "en-us") */
 	language: string
 	/** Subtitle shown below the feed title. Defaults to siteTitle */
 	siteDescription?: string
@@ -43,17 +45,24 @@ export interface FeedConfig {
 }
 
 export interface CollectionConfig {
-	/** Path to the content directory, relative to the Vite config file */
+	/** Path to the content directory, resolved from the Vite project root */
 	contentPath: string
 	/** Path prefix for content item URLs (e.g. "/blog/"). Defaults to "/" */
 	basePath?: string
-	/** Optional RSS feed configuration for this collection */
+	/** Optional Atom feed configuration for this collection */
 	feed?: FeedConfig
 }
 
 export interface InkwellOptions {
 	/** Named content collections keyed by collection name */
 	collections: Record<string, CollectionConfig>
+	/**
+	 * Extra marked extensions (e.g. `marked-footnote`) applied to every
+	 * collection, in both `inkwell:` and `inkwell-embedded:` modules and in
+	 * Atom feeds. They are added alongside the built-in link handling, which
+	 * still runs first for links. Async extensions are not supported.
+	 */
+	markedExtensions?: MarkedExtension[]
 }
 
 export interface Content {
