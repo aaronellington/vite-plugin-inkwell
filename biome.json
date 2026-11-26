@@ -18,5 +18,10 @@
 				"noExplicitAny": "off"
 			}
 		}
+	},
+	"markdown": {
+		"parser": {
+			"frontmatter": true
+		}
 	}
 }
